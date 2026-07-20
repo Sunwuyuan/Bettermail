@@ -97,6 +97,11 @@ async function authorize(request: Request, env: Env): Promise<boolean> {
   return false;
 }
 
+function allowListAll(env: Env): boolean {
+  const v = env.ALLOW_LIST_ALL?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 function mailKey(to: string, receivedMs: number, id: string): string {
   const ts = receivedMs.toString().padStart(15, "0");
   return `m:${normalizeEmail(to)}:${ts}:${id}`;
@@ -428,6 +433,12 @@ export default {
 
     try {
       const { to, limit } = await readParams(request, url);
+      if (!to && !allowListAll(env)) {
+        return fail(
+          400,
+          "mailbox required: pass to/email/mailbox, or set ALLOW_LIST_ALL",
+        );
+      }
       return ok(await consumeMails(env, to, limit));
     } catch (e) {
       console.error(

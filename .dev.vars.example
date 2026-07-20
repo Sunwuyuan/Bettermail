@@ -1,2 +1,5 @@
 # Optional. Leave empty / omit to disable auth.
 API_TOKEN=change-me-to-a-long-random-secret
+
+# Optional. Set to 1/true/yes to allow /mails without to (list all mailboxes). Default denied.
+# ALLOW_LIST_ALL=1

@@ -16,7 +16,8 @@
    - Variable name 必须为：`BMAIL`
    - 选已有或 Create new
 6. （可选）**Settings → Variables and Secrets** → `API_TOKEN`
-7. **Email** → **Email Routing** → Catch-all → **Send to a Worker** → 该 Worker
+7. （可选）同处设置 `ALLOW_LIST_ALL=1` 才允许不传 `to` 拉取全部邮箱；默认禁止
+8. **Email** → **Email Routing** → Catch-all → **Send to a Worker** → 该 Worker
 
 ## API
 [文档、MCP和给AI的提示词](https://bmail.apifox.cn/)

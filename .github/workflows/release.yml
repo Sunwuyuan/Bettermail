@@ -70,8 +70,9 @@ jobs:
             2. Cloudflare → Workers → Create Worker → Edit code
             3. 粘贴 JS → Save and Deploy
             4. Bindings → KV：`BMAIL`
-            5. （可选）Secret：`API_TOKEN`
-            6. Email Routing Catch-all → 该 Worker
+             5. （可选）Secret：`API_TOKEN`
+             6. （可选）`ALLOW_LIST_ALL=1` 才允许不传 to 拉全部；默认禁止
+             7. Email Routing Catch-all → 该 Worker
 
             ## 产物
 
