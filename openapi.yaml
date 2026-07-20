@@ -2,7 +2,9 @@ openapi: 3.0.3
 info:
   title: Bettermail
   version: 1.0.0
-  description: Catch-all 邮件入库 KV，GET/POST /mails 消费（返回即删）。
+  description: |
+    Catch-all 邮件入库 KV，GET/POST /mails 消费（返回即删）。
+    默认必须传 to/email/mailbox；仅当 Worker 环境变量 ALLOW_LIST_ALL=1/true/yes 时允许省略以拉取全部。
 
 servers:
   - url: https://bettermail.example.workers.dev
@@ -27,6 +29,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MailsResponse"
+        "400":
+          description: mailbox required（未传 to 且未开启 ALLOW_LIST_ALL）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: unauthorized
           content:
@@ -60,6 +68,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MailsResponse"
+        "400":
+          description: mailbox required（未传 to 且未开启 ALLOW_LIST_ALL）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: unauthorized
           content:
@@ -82,7 +96,8 @@ components:
       name: to
       in: query
       required: false
-      description: 收件邮箱，省略=全局
+      description: |
+        收件邮箱。默认必填；仅当 Worker 设置 ALLOW_LIST_ALL=1/true/yes 时可不传（拉全部）。
       schema:
         type: string
         format: email
@@ -110,7 +125,12 @@ components:
         to:
           type: string
           format: email
+          description: 默认必填；ALLOW_LIST_ALL 开启时可省略
         email:
+          type: string
+          format: email
+          description: to 别名
+        mailbox:
           type: string
           format: email
           description: to 别名
