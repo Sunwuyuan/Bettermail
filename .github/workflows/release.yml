@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -42,6 +44,17 @@ jobs:
           cd release
           zip -9 "bettermail-${TAG}.zip" index.js wrangler.jsonc openapi.yaml README.md
 
+      - name: Tag message
+        id: tag
+        run: |
+          # Annotated tag (-a/-m) subject+body; lightweight tag → empty
+          MSG=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed -e 's/[[:space:]]*$//')
+          {
+            echo "message<<EOF"
+            echo "$MSG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -49,22 +62,24 @@ jobs:
           name: Bettermail ${{ github.ref_name }}
           generate_release_notes: true
           body: |
+            ${{ steps.tag.outputs.message }}
+
             ## 推荐部署（Dashboard 粘贴）
 
-            1. 下载本 Release 的 `bettermail-${{ github.ref_name }}.js`（或 zip 内 `index.js`）
-            2. Cloudflare → **Workers & Pages** → Create Worker → **Edit code**
-            3. 全文替换为下载的 JS → **Save and Deploy**
-            4. **Settings → Bindings** → KV：变量名 **`BMAIL`**
-            5. （可选）**Variables** → Secret：`API_TOKEN`
-            6. **Email Routing** → Catch-all → 该 Worker
+            1. 下载 `bettermail-${{ github.ref_name }}.js`（或 zip 内 `index.js`）
+            2. Cloudflare → Workers → Create Worker → Edit code
+            3. 粘贴 JS → Save and Deploy
+            4. Bindings → KV：`BMAIL`
+            5. （可选）Secret：`API_TOKEN`
+            6. Email Routing Catch-all → 该 Worker
 
             ## 产物
 
             | 文件 | 说明 |
             |------|------|
-            | `bettermail-${{ github.ref_name }}.js` | 单文件 Worker（推荐直接粘贴） |
-            | `bettermail-${{ github.ref_name }}.zip` | index.js + wrangler.jsonc + openapi.yaml |
-            | `openapi.yaml` | Apifox 导入 |
+            | `bettermail-${{ github.ref_name }}.js` | 单文件（推荐粘贴） |
+            | `bettermail-${{ github.ref_name }}.zip` | js + config + openapi |
+            | `openapi.yaml` | Apifox |
           files: |
             release/bettermail-${{ github.ref_name }}.js
             release/bettermail-${{ github.ref_name }}.zip

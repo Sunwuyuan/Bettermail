@@ -6,45 +6,52 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
-
-function run(cmd, args) {
-  const r = spawnSync(cmd, args, {
-    cwd: root,
-    stdio: "inherit",
-    shell: true,
-  });
-  if (r.status !== 0) process.exit(r.status ?? 1);
-}
+const require = createRequire(import.meta.url);
 
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
-run("npx", [
-  "wrangler",
-  "deploy",
-  "--outdir=dist",
-  "--outfile=dist/index.js",
-  "--minify",
-  "--dry-run",
-]);
+// Bundle with esbuild (ships with wrangler) → plain ESM for Dashboard paste
+const esbuildBin = require.resolve("esbuild/bin/esbuild");
+const r = spawnSync(
+  process.execPath,
+  [
+    esbuildBin,
+    join(root, "src/index.ts"),
+    "--bundle",
+    "--format=esm",
+    "--platform=browser",
+    "--target=es2022",
+    `--outfile=${join(dist, "index.js")}`,
+    "--minify",
+    "--legal-comments=none",
+    "--conditions=workerd,worker,browser",
+    "--main-fields=browser,module,main",
+  ],
+  { cwd: root, stdio: "inherit", shell: false },
+);
+if (r.status !== 0) process.exit(r.status ?? 1);
 
-try {
-  rmSync(join(dist, "index.js.map"), { force: true });
-} catch {
-  /* ignore */
+const js = readFileSync(join(dist, "index.js"), "utf8");
+if (
+  js.startsWith("------") ||
+  js.includes("Content-Disposition:") ||
+  !/\bexport\b/.test(js)
+) {
+  console.error("Build output is not a valid Worker module; aborting.");
+  process.exit(1);
 }
 
-// Remove wrangler-generated README in dist
-try {
-  rmSync(join(dist, "README.md"), { force: true });
-} catch {
-  /* ignore */
-}
+writeFileSync(
+  join(dist, "index.js"),
+  js.replace(/\n?\/\/# sourceMappingURL=.*$/m, "").trimEnd() + "\n",
+);
 
 writeFileSync(
   join(dist, "wrangler.jsonc"),
@@ -70,6 +77,7 @@ try {
   /* ignore */
 }
 
-const kb = (readFileSync(join(dist, "index.js")).byteLength / 1024).toFixed(1);
-console.log(`\n✓ Bettermail build → dist/ (${kb} KiB)`);
-console.log("  index.js  wrangler.jsonc  openapi.yaml");
+const out = readFileSync(join(dist, "index.js"), "utf8");
+const kb = (Buffer.byteLength(out) / 1024).toFixed(1);
+console.log(`\n✓ Bettermail → dist/index.js (${kb} KiB)`);
+console.log("  可直接全选复制粘贴到 Cloudflare Dashboard");
