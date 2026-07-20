@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import {
   copyFileSync,
   mkdirSync,
@@ -14,29 +13,24 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 const require = createRequire(import.meta.url);
 
+// Use JS API (not the native binary path via node) — works on Linux CI + Windows
+const esbuild = require("esbuild");
+
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
-// Bundle with esbuild (ships with wrangler) → plain ESM for Dashboard paste
-const esbuildBin = require.resolve("esbuild/bin/esbuild");
-const r = spawnSync(
-  process.execPath,
-  [
-    esbuildBin,
-    join(root, "src/index.ts"),
-    "--bundle",
-    "--format=esm",
-    "--platform=browser",
-    "--target=es2022",
-    `--outfile=${join(dist, "index.js")}`,
-    "--minify",
-    "--legal-comments=none",
-    "--conditions=workerd,worker,browser",
-    "--main-fields=browser,module,main",
-  ],
-  { cwd: root, stdio: "inherit", shell: false },
-);
-if (r.status !== 0) process.exit(r.status ?? 1);
+await esbuild.build({
+  entryPoints: [join(root, "src/index.ts")],
+  bundle: true,
+  format: "esm",
+  platform: "browser",
+  target: "es2022",
+  outfile: join(dist, "index.js"),
+  minify: true,
+  legalComments: "none",
+  conditions: ["workerd", "worker", "browser"],
+  mainFields: ["browser", "module", "main"],
+});
 
 const js = readFileSync(join(dist, "index.js"), "utf8");
 if (
