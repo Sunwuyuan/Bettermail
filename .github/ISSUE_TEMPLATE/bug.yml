@@ -1,0 +1,12 @@
+name: Summon Sunwuyuan
+description: 召唤开发者
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐈 Developer Summoning Ritual
+
+        轻轻摸摸 @Sunwuyuan 的猫耳。
+
+        > 🐾 摸猫耳可以提升开发者 +5 心情值。

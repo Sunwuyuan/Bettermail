@@ -1,0 +1,16 @@
+name: 🐱 Pet the Cat
+description: 摸摸开发者的猫耳
+title: "🐱 *gently pets the cat ears*"
+labels:
+  - fun
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 🐱 Pet the Cat
+
+        @Sunwuyuan
+
+        你轻轻摸了摸开发者的猫耳。
+
+        猫猫的心情值：+1 ✨
