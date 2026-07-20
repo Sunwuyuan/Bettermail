@@ -1,0 +1,23 @@
+{
+  "name": "bettermail",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "node scripts/build.mjs",
+    "deploy": "wrangler deploy",
+    "deploy:dist": "npm run build && wrangler deploy --config dist/wrangler.jsonc",
+    "types": "wrangler types",
+    "cf-typegen": "wrangler types",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "postal-mime": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.26.0"
+  }
+}

@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: Bettermail
+  version: 1.0.0
+  description: Catch-all 邮件入库 KV，GET/POST /mails 消费（返回即删）。
+
+servers:
+  - url: https://bettermail.example.workers.dev
+  - url: http://127.0.0.1:8787
+
+paths:
+  /mails:
+    get:
+      summary: 消费邮件
+      operationId: consumeMailsGet
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/to"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/token"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MailsResponse"
+        "401":
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      summary: 消费邮件
+      operationId: consumeMailsPost
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/token"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MailsRequest"
+            example:
+              to: user@example.com
+              limit: 20
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/MailsRequest"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MailsResponse"
+        "401":
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    to:
+      name: to
+      in: query
+      required: false
+      description: 收件邮箱，省略=全局
+      schema:
+        type: string
+        format: email
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    token:
+      name: token
+      in: query
+      required: false
+      description: 等同 Bearer（可选）
+      schema:
+        type: string
+
+  schemas:
+    MailsRequest:
+      type: object
+      properties:
+        to:
+          type: string
+          format: email
+        email:
+          type: string
+          format: email
+          description: to 别名
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+
+    ApiEnvelope:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: ok
+        data:
+          nullable: true
+
+    MailsResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/MailsData"
+
+    ErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              nullable: true
+              example: null
+
+    MailsData:
+      type: object
+      required: [list, to, hasMore]
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Email"
+        to:
+          type: string
+          nullable: true
+        hasMore:
+          type: boolean
+
+    Email:
+      type: object
+      properties:
+        id:
+          type: string
+        receivedAt:
+          type: string
+          format: date-time
+        from:
+          type: string
+        to:
+          type: string
+        subject:
+          type: string
+        messageId:
+          type: string
+          nullable: true
+        date:
+          type: string
+          nullable: true
+        text:
+          type: string
+          nullable: true
+        html:
+          type: string
+          nullable: true
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attachment"
+        rawBase64:
+          type: string
+        rawSize:
+          type: integer
+
+    Attachment:
+      type: object
+      properties:
+        filename:
+          type: string
+          nullable: true
+        mimeType:
+          type: string
+        size:
+          type: integer
+        contentId:
+          type: string
+          nullable: true
+        contentBase64:
+          type: string

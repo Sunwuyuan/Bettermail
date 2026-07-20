@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run check
+
+      - name: Build
+        run: npm run build
+
+      - name: Package
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          mkdir -p release
+          cp dist/index.js "release/bettermail-${TAG}.js"
+          cp dist/index.js release/index.js
+          cp dist/wrangler.jsonc release/wrangler.jsonc
+          cp dist/openapi.yaml release/openapi.yaml
+          cp README.md release/README.md
+          cd release
+          zip -9 "bettermail-${TAG}.zip" index.js wrangler.jsonc openapi.yaml README.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Bettermail ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ## 推荐部署（Dashboard 粘贴）
+
+            1. 下载本 Release 的 `bettermail-${{ github.ref_name }}.js`（或 zip 内 `index.js`）
+            2. Cloudflare → **Workers & Pages** → Create Worker → **Edit code**
+            3. 全文替换为下载的 JS → **Save and Deploy**
+            4. **Settings → Bindings** → KV：变量名 **`BMAIL`**
+            5. （可选）**Variables** → Secret：`API_TOKEN`
+            6. **Email Routing** → Catch-all → 该 Worker
+
+            ## 产物
+
+            | 文件 | 说明 |
+            |------|------|
+            | `bettermail-${{ github.ref_name }}.js` | 单文件 Worker（推荐直接粘贴） |
+            | `bettermail-${{ github.ref_name }}.zip` | index.js + wrangler.jsonc + openapi.yaml |
+            | `openapi.yaml` | Apifox 导入 |
+          files: |
+            release/bettermail-${{ github.ref_name }}.js
+            release/bettermail-${{ github.ref_name }}.zip
+            release/openapi.yaml
+            release/wrangler.jsonc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

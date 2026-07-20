@@ -1,0 +1,2 @@
+# Optional. Leave empty / omit to disable auth.
+API_TOKEN=change-me-to-a-long-random-secret
