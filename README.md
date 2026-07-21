@@ -1,8 +1,7 @@
 # Bettermail
 
-
 你看雪花飘散。
-
+![banner](banner.png)
 
 快速、无状态的收信、获取内容并随即删除。
 
