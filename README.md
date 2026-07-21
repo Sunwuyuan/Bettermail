@@ -7,16 +7,13 @@
 
 ## 推荐部署：粘贴 JS
 
-1. 打开 [Releases](../../releases)，下载 **`bettermail-v*.js`**
-2. Cloudflare → **Workers & Pages** → **Create** → **Create Worker**
-3. 点 **Edit code**，**全选删除**默认代码，**粘贴**下载的 JS 全文
-4. 右上角 **Deploy** / **Save and Deploy**
-5. **Settings → Bindings** 绑定存储二选一：
-   - **D1 Database**：名称为 `DB`
-   - **KV Namespace**：名称为 `BMAIL`
-6. （可选）**Settings → Variables and Secrets** → `API_TOKEN`
-7. （可选）同处设置 `ALLOW_LIST_ALL=1` 才允许不传 `to` 拉取全部邮箱；默认禁止
-8. **Email** → **Email Routing** → Catch-all → **Send to a Worker** → 该 Worker
+1. 打开 [Releases](../../releases)，下载 **`bettermail-v*.js`**，去Cloudflare中创建worker粘贴。
+2. 绑定存储二选一：
+   - **D1**：名称为 `DB`
+   - **KV**：名称为 `BMAIL`
+3. （可选）**Settings → Variables and Secrets** → `API_TOKEN`
+4. （可选）同处设置 `ALLOW_LIST_ALL=1` 才允许不传 `to` 拉取全部邮箱；默认禁止
+5. 你的域名的设置 → **Email Routing** → Catch-all → **Send to a Worker** → 该 Worker
 
 ## 文档、AI提示词
 [在线文档](https://bmail.apifox.cn/)

@@ -60,13 +60,13 @@ jobs:
 
             ## 部署
 
-            1. 下载 `bettermail-${{ github.ref_name }}.js`
-            2. Cloudflare → Workers → Create Worker → Edit code
-            3. 粘贴 JS → Save and Deploy
-            4. Bindings → KV：`BMAIL`
-             5. （可选）Secret：`API_TOKEN`
-             6. （可选）`ALLOW_LIST_ALL=1` 才允许不传 to 拉全部；默认禁止
-             7. Email Routing Catch-all → 该 Worker
+            1. 下载 `bettermail-${{ github.ref_name }}.js` 去Cloudflare中创建worker粘贴。
+            2. 绑定存储二选一：
+              - D1 名称为 `DB`
+              - KV 名称为 `BMAIL`
+            3. （可选）配置环境变量：`API_TOKEN`
+            4. （可选）`ALLOW_LIST_ALL=1` 时允许不传 to 拉全部收件箱的邮件；默认禁止
+            5. 在你的域名下的 Email Routing 设置 Catch-all → 该 Worker
 
           files: |
             release/bettermail-${{ github.ref_name }}.js
