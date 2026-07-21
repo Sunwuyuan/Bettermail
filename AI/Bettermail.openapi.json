@@ -1,0 +1,467 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Bettermail",
+    "description": "Catch-all 邮件入库 KV，GET/POST /mails 消费（返回即删）。",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/config": {
+      "get": {
+        "summary": "获取配置",
+        "deprecated": false,
+        "description": "供前端探测是否需要密码（API_TOKEN 已设置）、是否允许不填邮箱拉全量（ALLOW_LIST_ALL），该接口无需鉴权。",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/mails": {
+      "get": {
+        "summary": "获取邮件",
+        "deprecated": false,
+        "description": "获取邮件的GET接口，邮件在请求完成后就会从服务端删除，收件地址不需要提前注册。\n\n如果服务端配置了ALLOW_LIST_ALL为1活着true，则可以不传to，直接获取所有收件地址的邮件。\n\n公共实例为 邮箱@190823.xyz API地址是https://bettermail-demo.wuyuan.dev，可以直接使用，但需要在项目README中注明链接到 https://x.com/wuyuandev",
+        "operationId": "consumeMailsGet",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "to",
+            "in": "query",
+            "description": "收件邮箱，省略即查看全局邮件，默认必填。配置环境变量 ALLOW_LIST_ALL 为1可解除限制",
+            "required": true,
+            "example": "demo@190823.xyz",
+            "schema": {
+              "type": "string",
+              "format": "email"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "description": "等同 Bearer（可选）",
+            "required": false,
+            "example": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailsResponse"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 400,
+                  "message": "mailbox required: pass to/email/mailbox, or set ALLOW_LIST_ALL",
+                  "data": null
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "获取邮件",
+        "deprecated": false,
+        "description": "获取邮件的POST接口，邮件在请求完成后就会从服务端删除，收件地址不需要提前注册。\n\n如果服务端配置了ALLOW_LIST_ALL为1活着true，则可以不传to，直接获取所有收件地址的邮件。\n\n公共实例为 邮箱@190823.xyz API地址是https://bettermail-demo.wuyuan.dev，可以直接使用，但需要在项目README中注明链接到 https://x.com/wuyuandev",
+        "operationId": "consumeMailsPost",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "等同 Bearer（可选）",
+            "required": false,
+            "example": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailsRequest"
+              },
+              "example": {
+                "to": "demo@190823.xyz",
+                "limit": 20
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailsResponse"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConfigResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "example": "ok"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ConfigData"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data"
+        ]
+      },
+      "ConfigData": {
+        "type": "object",
+        "properties": {
+          "needsAuth": {
+            "type": "boolean",
+            "description": "true 表示已设置 API_TOKEN，调用 /mails 需要鉴权"
+          },
+          "allowListAll": {
+            "type": "boolean",
+            "description": "true 表示允许省略 to 拉取全部邮箱"
+          }
+        },
+        "required": [
+          "needsAuth",
+          "allowListAll"
+        ]
+      },
+      "MailsRequest": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "format": "email"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "to 别名"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "ApiEnvelope": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "example": "ok"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MailsData"
+          }
+        }
+      },
+      "MailsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiEnvelope"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/MailsData"
+              }
+            }
+          }
+        ]
+      },
+      "ErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiEnvelope"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "null",
+                "example": null
+              }
+            }
+          }
+        ]
+      },
+      "MailsData": {
+        "type": "object",
+        "required": [
+          "list",
+          "to",
+          "hasMore"
+        ],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Email"
+            }
+          },
+          "to": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Email": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "messageId": {
+            "type": "string",
+            "nullable": true
+          },
+          "date": {
+            "type": "string",
+            "nullable": true
+          },
+          "text": {
+            "type": "string",
+            "nullable": true
+          },
+          "html": {
+            "type": "string",
+            "nullable": true
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "properties": {}
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            }
+          },
+          "rawBase64": {
+            "type": "string"
+          },
+          "rawSize": {
+            "type": "integer"
+          }
+        }
+      },
+      "Attachment": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "nullable": true
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "contentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "contentBase64": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {},
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "parameters": {
+      "to": {
+        "name": "to",
+        "in": "query",
+        "required": false,
+        "description": "收件邮箱，省略=全局",
+        "schema": {
+          "type": "string",
+          "format": "email"
+        }
+      },
+      "limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 50
+        }
+      },
+      "token": {
+        "name": "token",
+        "in": "query",
+        "required": false,
+        "description": "等同 Bearer（可选）",
+        "schema": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://bettermail-demo.wuyuan.dev",
+      "description": "Bettermail 演示站"
+    }
+  ],
+  "security": []
+}

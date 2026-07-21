@@ -18,9 +18,12 @@
 7. （可选）同处设置 `ALLOW_LIST_ALL=1` 才允许不传 `to` 拉取全部邮箱；默认禁止
 8. **Email** → **Email Routing** → Catch-all → **Send to a Worker** → 该 Worker
 
-## API
-[文档、MCP和给AI的提示词](https://bmail.apifox.cn/)
+## 文档、AI提示词
+[在线文档](https://bmail.apifox.cn/)
 
+
+其他可以直接复制给AI的提示词：
+[AI提示词](/AI)
 
 
 

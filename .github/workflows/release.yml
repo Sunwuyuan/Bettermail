@@ -37,12 +37,6 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           mkdir -p release
           cp dist/index.js "release/bettermail-${TAG}.js"
-          cp dist/index.js release/index.js
-          cp dist/wrangler.jsonc release/wrangler.jsonc
-          cp dist/openapi.yaml release/openapi.yaml
-          cp README.md release/README.md
-          cd release
-          zip -9 "bettermail-${TAG}.zip" index.js wrangler.jsonc openapi.yaml README.md
 
       - name: Tag message
         id: tag
@@ -64,9 +58,9 @@ jobs:
           body: |
             ${{ steps.tag.outputs.message }}
 
-            ## 推荐部署（Dashboard 粘贴）
+            ## 部署
 
-            1. 下载 `bettermail-${{ github.ref_name }}.js`（或 zip 内 `index.js`）
+            1. 下载 `bettermail-${{ github.ref_name }}.js`
             2. Cloudflare → Workers → Create Worker → Edit code
             3. 粘贴 JS → Save and Deploy
             4. Bindings → KV：`BMAIL`
@@ -74,17 +68,7 @@ jobs:
              6. （可选）`ALLOW_LIST_ALL=1` 才允许不传 to 拉全部；默认禁止
              7. Email Routing Catch-all → 该 Worker
 
-            ## 产物
-
-            | 文件 | 说明 |
-            |------|------|
-            | `bettermail-${{ github.ref_name }}.js` | 单文件（推荐粘贴） |
-            | `bettermail-${{ github.ref_name }}.zip` | js + config + openapi |
-            | `openapi.yaml` | Apifox |
           files: |
             release/bettermail-${{ github.ref_name }}.js
-            release/bettermail-${{ github.ref_name }}.zip
-            release/openapi.yaml
-            release/wrangler.jsonc
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
