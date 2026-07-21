@@ -11,9 +11,9 @@
 2. Cloudflare → **Workers & Pages** → **Create** → **Create Worker**
 3. 点 **Edit code**，**全选删除**默认代码，**粘贴**下载的 JS 全文
 4. 右上角 **Deploy** / **Save and Deploy**
-5. **Settings → Bindings → Add → KV Namespace**
-   - Variable name 必须为：`BMAIL`
-   - 选已有或 Create new
+5. **Settings → Bindings** 绑定存储二选一：
+   - **D1 Database**：名称为 `DB`
+   - **KV Namespace**：名称为 `BMAIL`
 6. （可选）**Settings → Variables and Secrets** → `API_TOKEN`
 7. （可选）同处设置 `ALLOW_LIST_ALL=1` 才允许不传 `to` 拉取全部邮箱；默认禁止
 8. **Email** → **Email Routing** → Catch-all → **Send to a Worker** → 该 Worker

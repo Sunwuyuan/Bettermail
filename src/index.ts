@@ -1,43 +1,19 @@
 import PostalMime from "postal-mime";
+import {
+  resolveStore,
+  storageBackend,
+  type StoredEmail,
+} from "./storage";
 
 const MAX_RAW_STORE_BYTES = 2 * 1024 * 1024;
 const MAX_INBOUND_BYTES = 25 * 1024 * 1024;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
-const EMAIL_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 interface ApiResult<T = unknown> {
   code: number;
   message: string;
   data: T | null;
-}
-
-interface StoredEmail {
-  id: string;
-  receivedAt: string;
-  from: string;
-  to: string;
-  subject: string;
-  messageId: string | null;
-  date: string | null;
-  text: string | null;
-  html: string | null;
-  headers: Record<string, string>;
-  attachments: Array<{
-    filename: string | null;
-    mimeType: string;
-    size: number;
-    contentId?: string | null;
-    contentBase64?: string;
-  }>;
-  rawBase64?: string;
-  rawSize: number;
-}
-
-interface MailsData {
-  list: StoredEmail[];
-  to: string | null;
-  hasMore: boolean;
 }
 
 function ok<T>(data: T, message = "ok"): Response {
@@ -100,11 +76,6 @@ async function authorize(request: Request, env: Env): Promise<boolean> {
 function allowListAll(env: Env): boolean {
   const v = env.ALLOW_LIST_ALL?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes";
-}
-
-function mailKey(to: string, receivedMs: number, id: string): string {
-  const ts = receivedMs.toString().padStart(15, "0");
-  return `m:${normalizeEmail(to)}:${ts}:${id}`;
 }
 
 function parseLimit(raw: unknown): number {
@@ -259,58 +230,7 @@ async function storeEmail(
     stored.rawBase64 = bytesToBase64(rawBuf);
   }
 
-  await env.BMAIL.put(mailKey(to, receivedMs, id), JSON.stringify(stored), {
-    expirationTtl: EMAIL_TTL_SECONDS,
-    metadata: {
-      to,
-      from,
-      subject: subject.slice(0, 200),
-      receivedAt,
-    },
-  });
-}
-
-async function consumeMails(
-  env: Env,
-  to: string | null,
-  limit: number,
-): Promise<MailsData> {
-  const prefix = to ? `m:${normalizeEmail(to)}:` : "m:";
-  const listed = await env.BMAIL.list({ prefix, limit });
-
-  if (listed.keys.length === 0) {
-    return { list: [], to, hasMore: false };
-  }
-
-  const keys = listed.keys.map((k) => k.name);
-  const values = await Promise.all(keys.map((k) => env.BMAIL.get(k)));
-
-  const list: StoredEmail[] = [];
-  const toDelete: string[] = [];
-
-  for (let i = 0; i < keys.length; i++) {
-    const raw = values[i];
-    const key = keys[i]!;
-    if (!raw) {
-      toDelete.push(key);
-      continue;
-    }
-    try {
-      list.push(JSON.parse(raw) as StoredEmail);
-      toDelete.push(key);
-    } catch {
-      toDelete.push(key);
-    }
-  }
-
-  list.sort((a, b) => a.receivedAt.localeCompare(b.receivedAt));
-  await Promise.all(toDelete.map((k) => env.BMAIL.delete(k)));
-
-  return {
-    list,
-    to,
-    hasMore: !listed.list_complete || list.length >= limit,
-  };
+  await resolveStore(env).put(stored, receivedMs);
 }
 
 async function readParams(
@@ -838,13 +758,7 @@ export default {
           attachments: [],
           rawSize: message.rawSize,
         };
-        ctx.waitUntil(
-          env.BMAIL.put(
-            mailKey(to, receivedMs, id),
-            JSON.stringify(fallback),
-            { expirationTtl: EMAIL_TTL_SECONDS },
-          ),
-        );
+        ctx.waitUntil(resolveStore(env).put(fallback, receivedMs));
       } catch {
         /* accept silently */
       }
@@ -899,15 +813,26 @@ export default {
           "mailbox required: pass to/email/mailbox, or set ALLOW_LIST_ALL",
         );
       }
-      return ok(await consumeMails(env, to, limit));
+      if (storageBackend(env) === "none") {
+        return fail(
+          503,
+          "No storage binding: bind DB (D1, preferred) or BMAIL (KV)",
+          503,
+        );
+      }
+      return ok(await resolveStore(env).consume(to, limit));
     } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
       console.error(
         JSON.stringify({
           message: "fetch failed",
-          error: e instanceof Error ? e.message : String(e),
+          error: msg,
           path,
         }),
       );
+      if (msg.includes("No storage binding")) {
+        return fail(503, msg, 503);
+      }
       return fail(500, "internal error", 500);
     }
   },

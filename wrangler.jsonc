@@ -10,6 +10,15 @@
       "head_sampling_rate": 1
     }
   },
+  // Storage: bind at least one. If both are bound, D1 (DB) is preferred.
+  // npx wrangler d1 create bettermail
+  // "d1_databases": [
+  //   {
+  //     "binding": "DB",
+  //     "database_name": "bettermail",
+  //     "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+  //   }
+  // ],
   // npx wrangler kv namespace create BMAIL
   "kv_namespaces": [
     {

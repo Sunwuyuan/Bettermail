@@ -56,9 +56,9 @@ writeFileSync(
       compatibility_date: "2026-07-20",
       compatibility_flags: ["nodejs_compat"],
       observability: { enabled: true, logs: { head_sampling_rate: 1 } },
-      kv_namespaces: [
-        { binding: "BMAIL", id: "REPLACE_WITH_KV_NAMESPACE_ID" },
-      ],
+      // Bind DB (D1, preferred) and/or BMAIL (KV) in the Dashboard.
+      // When both are bound, runtime prefers D1.
+
     },
     null,
     2,
