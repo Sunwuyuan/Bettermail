@@ -1,16 +1,53 @@
 openapi: 3.0.3
 info:
   title: Bettermail
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Catch-all 邮件入库 KV，GET/POST /mails 消费（返回即删）。
     默认必须传 to/email/mailbox；仅当 Worker 环境变量 ALLOW_LIST_ALL=1/true/yes 时允许省略以拉取全部。
+    GET / 返回内置 Web UI；GET /config 返回前端所需的公开配置（是否需要密码、是否允许全收）。
 
 servers:
   - url: https://bettermail.example.workers.dev
   - url: http://127.0.0.1:8787
 
 paths:
+  /:
+    get:
+      summary: Web UI
+      operationId: getWebUi
+      description: 返回内置单页 HTML（Claude 风格邮件加载界面）。无需鉴权。
+      security: []
+      responses:
+        "200":
+          description: HTML 页面
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /config:
+    get:
+      summary: 公开配置
+      operationId: getConfig
+      description: |
+        供前端探测是否需要密码（API_TOKEN 已设置）、是否允许不填邮箱拉全量（ALLOW_LIST_ALL）。
+        不返回任何密钥本身。无需鉴权。
+      security: []
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigResponse"
+              example:
+                code: 0
+                message: ok
+                data:
+                  needsAuth: true
+                  allowListAll: false
+
   /mails:
     get:
       summary: 消费邮件
@@ -18,6 +55,7 @@ paths:
       security:
         - BearerAuth: []
         - ApiKeyAuth: []
+        - {}
       parameters:
         - $ref: "#/components/parameters/to"
         - $ref: "#/components/parameters/limit"
@@ -36,7 +74,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
-          description: unauthorized
+          description: unauthorized（已设置 API_TOKEN 且鉴权失败）
           content:
             application/json:
               schema:
@@ -47,6 +85,7 @@ paths:
       security:
         - BearerAuth: []
         - ApiKeyAuth: []
+        - {}
       parameters:
         - $ref: "#/components/parameters/token"
       requestBody:
@@ -75,7 +114,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
-          description: unauthorized
+          description: unauthorized（已设置 API_TOKEN 且鉴权失败）
           content:
             application/json:
               schema:
@@ -86,10 +125,12 @@ components:
     BearerAuth:
       type: http
       scheme: bearer
+      description: Authorization: Bearer <API_TOKEN>；仅当环境变量 API_TOKEN 已设置时需要
     ApiKeyAuth:
       type: apiKey
       in: header
       name: X-API-Key
+      description: 等同 Bearer；仅当环境变量 API_TOKEN 已设置时需要
 
   parameters:
     to:
@@ -98,6 +139,7 @@ components:
       required: false
       description: |
         收件邮箱。默认必填；仅当 Worker 设置 ALLOW_LIST_ALL=1/true/yes 时可不传（拉全部）。
+        别名 query：email、mailbox。
       schema:
         type: string
         format: email
@@ -114,7 +156,7 @@ components:
       name: token
       in: query
       required: false
-      description: 等同 Bearer（可选）
+      description: 等同 Bearer / X-API-Key（可选）
       schema:
         type: string
 
@@ -151,6 +193,25 @@ components:
           example: ok
         data:
           nullable: true
+
+    ConfigResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/ConfigData"
+
+    ConfigData:
+      type: object
+      required: [needsAuth, allowListAll]
+      properties:
+        needsAuth:
+          type: boolean
+          description: true 表示已设置 API_TOKEN，调用 /mails 需要鉴权
+        allowListAll:
+          type: boolean
+          description: true 表示允许省略 to 拉取全部邮箱
 
     MailsResponse:
       allOf:

@@ -1,4 +1,4 @@
-# Bettermail
+# Bettermail 🍥
 
 你看雪花飘散。
 ![banner](banner.png)
